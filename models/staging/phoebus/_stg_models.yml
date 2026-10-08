@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: stg_cms__player
+    description: Guest identity without sensitive fields (SSN, ID numbers, contact details).
+    columns:
+      - name: player_id
+        data_tests: [unique, not_null]
+  - name: stg_loy__member
+    columns:
+      - name: member_id
+        data_tests: [unique, not_null]
+      - name: player_id
+        data_tests: [unique, not_null]
+  - name: stg_cms__player_session
+    columns:
+      - name: session_id
+        data_tests: [unique, not_null]
+  - name: stg_pos__check
+    columns:
+      - name: check_id
+        data_tests: [unique, not_null]
+  - name: stg_hotel__reservation
+    columns:
+      - name: reservation_id
+        data_tests: [unique, not_null]

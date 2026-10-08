@@ -1,0 +1,12 @@
+# Example profile for local development against BigQuery.
+# (When the project runs in Fivetran Transformations for dbt Core, Fivetran injects the profile for you.)
+phoebus_loyalty:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: oauth                 # or service-account
+      project: internal-sales
+      dataset: phoebus_dbt_dev      # dbt writes <dataset>_staging, <dataset>_intermediate, <dataset>_recognition
+      location: US
+      threads: 8

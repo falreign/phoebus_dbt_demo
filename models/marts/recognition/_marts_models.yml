@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: dim_guest_360
+    description: One row per guest - identity (no sensitive fields), tier, lifetime value, preferences and current presence.
+    columns:
+      - name: player_id
+        data_tests: [unique, not_null]
+      - name: is_eligible
+        description: True only for active loyalty members of legal gaming age. Self-excluded and banned guests are never eligible.
+        data_tests: [not_null]
+
+  - name: fct_guest_milestones
+    description: >
+      Every milestone a guest crossed, derived generically from int_guest_metric_events + the loyalty_milestone_rules seed.
+    columns:
+      - name: milestone_id
+        data_tests: [unique, not_null]
+      - name: rule_id
+        data_tests:
+          - relationships:
+              to: ref('loyalty_milestone_rules')
+              field: rule_id
+
+  - name: fct_recognition_recommendations
+    description: Today's actionable recognition recommendations with status, prescriptive action, owner, reward and talking point.
+    columns:
+      - name: recommendation_id
+        data_tests: [unique, not_null]
+      - name: recommendation_status
+        data_tests:
+          - accepted_values:
+              values: [RECOMMEND, RG_CHECK_IN, SUPPRESSED_COOLDOWN, SUPPRESSED_BUDGET, INELIGIBLE]
+
+  - name: rpt_daily_recognition_worklist
+    description: >
+      Host-facing worklist, ranked per property, one row per guest. Intended to be refreshed after each Fivetran sync
+      and surfaced in a BI tool, Slack, or a host tablet.
+    columns:
+      - name: recommendation_id
+        data_tests: [unique, not_null]
+      - name: player_id
+        data_tests: [unique, not_null]

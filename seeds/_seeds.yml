@@ -1,0 +1,42 @@
+version: 2
+
+seeds:
+  - name: loyalty_milestone_rules
+    description: >
+      The milestone catalog. One row = one recognition rule. A guest "crosses" a rule when the metric named
+      in `metric_name` moves from below `threshold` to at/above it. Add a row to add a milestone - no SQL changes.
+    columns:
+      - name: rule_id
+        data_tests: [unique, not_null]
+      - name: reward_type
+        data_tests:
+          - accepted_values:
+              values: [PersonalNote, NonGaming, GamingOffer, Experience]
+      - name: metric_name
+        description: Must match a cumulative metric (dbt_project.yml), or one of the event metrics built in int_guest_metric_events.
+        data_tests:
+          - accepted_values:
+              values:
+                  - lifetime_theo_win
+                  - lifetime_visit_days
+                  - lifetime_hotel_nights
+                  - lifetime_dining_spend
+                  - consecutive_visit_months
+                  - days_since_prior_visit
+                  - daily_jackpot_total
+                  - tier_level
+                  - membership_years
+                  - birthday
+                  - age_at_birthday
+      - name: is_active
+        description: 1 = rule is live, 0 = disabled.
+      - name: lead_days
+        description: Surface the recommendation this many days BEFORE the event date (calendar milestones).
+      - name: recognition_window_days
+        description: Keep the recommendation actionable this many days AFTER the event date.
+
+  - name: recognition_budget_guardrails
+    description: Maximum recognition value (comps + new rewards) per guest per rolling 30 days, by loyalty tier.
+    columns:
+      - name: tier_id
+        data_tests: [unique, not_null]

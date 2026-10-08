@@ -1,0 +1,85 @@
+name: phoebus_loyalty_recognition
+version: "1.0.0"
+config-version: 2
+profile: phoebus_loyalty
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # ---- where Fivetran lands the SQL Server data -------------------------------------------------
+  # Fivetran creates one destination schema per source schema: <prefix>_cms, <prefix>_loy, <prefix>_pos ...
+  fivetran_schema_prefix: phoebus_gaming
+  fivetran_database: null            # null = use the target's database/project
+
+  # ---- time handling ----------------------------------------------------------------------------
+  as_of_date: null                   # null = "today's" gaming day. Set for back-testing: --vars '{as_of_date: 2026-10-07}'
+  local_utc_offset_hours: -7         # Las Vegas (PDT = -7, PST = -8)
+  gaming_day_start_hour: 6           # gaming day rolls over at 6 AM local
+
+  # ---- recognition policy knobs -----------------------------------------------------------------
+  min_gaming_age: 21
+  recognition_cooldown_days: 14      # look-back for "was this guest already recognized recently?"
+  recognition_cooldown_min_usd: 25   # comps at/above this inside the cooldown window suppress new recs...
+  cooldown_override_priority: 90     # ...unless the milestone's priority score is at least this
+  guardrail_window_days: 30          # rolling window for the per-tier reward budget
+  default_30d_budget_usd: 100        # used when a tier has no row in recognition_budget_guardrails
+  calendar_window_days: 45           # how far around today birthdays/anniversaries are generated
+  worklist_size_per_property: 25
+
+  # ---- responsible-gaming guardrails ------------------------------------------------------------
+  rg_lookback_days: 2                # gaming days (including today) evaluated for risk signals
+  rg_min_daily_loss_usd: 2500        # flag only if today's loss is at least this...
+  rg_loss_multiple_of_avg: 3         # ...AND at least N x the guest's own 90-day average daily loss
+  rg_max_minutes_per_day: 600        # OR the guest has played 10+ hours in a day
+  # NOTE: keep the next two text values free of apostrophes (they are inlined as SQL string literals; BigQuery escapes quotes differently).
+  rg_talking_point: >-
+    {first_name}, we are so glad you are here - can I bring you something to eat or drink, or show you a
+    quiet spot to take a break? I am here if you need anything at all.
+  rg_check_in_action: >-
+    Host makes a quiet, personal check-in - NO gaming incentives. Offer a complimentary meal or
+    quiet-lounge break, and make sure the guest knows about Responsible Gaming resources.
+
+  # ---- DRY metric registry ----------------------------------------------------------------------
+  # Daily measures produced for every guest-day (zero-filled by the measure_cols macro)
+  activity_measures:
+    - gaming_sessions
+    - gaming_minutes
+    - theo_win
+    - actual_win
+    - cash_in
+    - points_earned
+    - dining_checks
+    - dining_spend
+    - hotel_stays
+    - hotel_nights
+    - hotel_revenue
+    - jackpot_count
+    - jackpot_amount
+  # metric_name -> daily measure that is accumulated over the guest's lifetime.
+  # Add a line here + a row in seeds/loyalty_milestone_rules.csv to introduce a new cumulative milestone.
+  cumulative_metrics:
+    lifetime_theo_win: theo_win
+    lifetime_visit_days: visit_flag
+    lifetime_hotel_nights: hotel_nights
+    lifetime_dining_spend: dining_spend
+
+seeds:
+  phoebus_loyalty_recognition:
+    +schema: reference
+
+models:
+  phoebus_loyalty_recognition:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: table
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: recognition

@@ -1,0 +1,67 @@
+version: 2
+
+# Fivetran SQL Server connector -> one destination schema per source schema: <prefix>_cms, <prefix>_loy, ...
+# Fivetran lowercases SQL Server table/column names without separators (PlayerSession -> playersession, PlayerID -> playerid).
+# Columns are matched by the fv_cols macro (ignores case and underscores). Multi-word TABLE names need an `identifier` below;
+# change those two lines if your tables are named differently.
+
+sources:
+  - name: phoebus_cms
+    description: Casino management system (ACSC-style)
+    database: "{{ var('fivetran_database') or target.database }}"
+    schema: "{{ var('fivetran_schema_prefix') }}_cms"
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: player
+      - name: player_session
+        identifier: playersession      # Fivetran lowercases SQL Server names and keeps no separators (PlayerSession)
+      - name: jackpot
+
+  - name: phoebus_loy
+    description: Loyalty / LMS
+    database: "{{ var('fivetran_database') or target.database }}"
+    schema: "{{ var('fivetran_schema_prefix') }}_loy"
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: member
+      - name: tier
+      - name: tier_history
+        identifier: tierhistory
+      - name: comp
+
+  - name: phoebus_pos
+    description: Point of sale
+    database: "{{ var('fivetran_database') or target.database }}"
+    schema: "{{ var('fivetran_schema_prefix') }}_pos"
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: check
+        identifier: check
+      - name: outlet
+
+  - name: phoebus_hotel
+    description: Hotel property management
+    database: "{{ var('fivetran_database') or target.database }}"
+    schema: "{{ var('fivetran_schema_prefix') }}_hotel"
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: {count: 2, period: hour}
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: reservation
+
+  - name: phoebus_ref
+    description: Shared reference data
+    database: "{{ var('fivetran_database') or target.database }}"
+    schema: "{{ var('fivetran_schema_prefix') }}_ref"
+    tables:
+      - name: property
